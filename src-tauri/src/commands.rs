@@ -54,6 +54,8 @@ pub async fn toggle_recording(app: AppHandle) -> Result<(), String> {
 }
 
 async fn start_recording_inner(app: &AppHandle, state: &State<'_, AppState>) -> Result<(), String> {
+    *state.insertion_target.lock().unwrap() = inject::frontmost_bundle_identifier();
+
     let device = state.config.lock().unwrap().audio_device.clone();
     state
         .recorder
@@ -112,13 +114,14 @@ async fn stop_recording_inner(
     let entry = if text.trim().is_empty() {
         None
     } else {
+        let target = state.insertion_target.lock().unwrap().clone();
         let entry = state
             .history
             .lock()
             .unwrap()
             .insert_entry(&text, &source)
             .map_err(|error| error.to_string())?;
-        let _ = inject::inject_text(&text);
+        let _ = inject::inject_text(&text, target.as_deref());
         Some(entry)
     };
 

@@ -23,6 +23,7 @@ pub struct AppState {
     pub config: Mutex<AppConfig>,
     pub history: Mutex<HistoryDb>,
     pub download: Mutex<ModelDownloadStatus>,
+    pub insertion_target: Mutex<Option<String>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -49,6 +50,7 @@ impl AppState {
             config: Mutex::new(AppConfig::load()?),
             history: Mutex::new(HistoryDb::new()?),
             download: Mutex::new(ModelDownloadStatus::default()),
+            insertion_target: Mutex::new(None),
         })
     }
 }
