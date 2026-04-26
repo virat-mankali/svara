@@ -23,7 +23,7 @@ pub struct AppState {
     pub config: Mutex<AppConfig>,
     pub history: Mutex<HistoryDb>,
     pub download: Mutex<ModelDownloadStatus>,
-    pub insertion_target: Mutex<Option<String>>,
+    pub insertion_target: Mutex<Option<inject::InsertionTarget>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -126,15 +126,12 @@ pub fn run() {
             None,
         ))
         .plugin(tauri_plugin_notification::init())
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .level(log::LevelFilter::Info)
+                .build(),
+        )
         .setup(|app| {
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
-
             setup_tray(app.handle())?;
 
             let state = app.state::<AppState>();
@@ -161,6 +158,8 @@ pub fn run() {
             commands::download_local_model,
             commands::get_model_download_status,
             commands::list_audio_devices,
+            commands::open_accessibility_settings,
+            commands::open_microphone_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Svara");

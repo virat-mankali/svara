@@ -1,17 +1,29 @@
-use std::process::Command;
 use std::thread;
 use std::time::Duration;
 
+#[derive(Debug, Clone, Copy)]
+pub struct InsertionTarget {
+    pid: i32,
+}
+
 #[cfg(target_os = "macos")]
 mod macos {
-    use std::ffi::c_void;
+    use std::ffi::{c_int, c_void};
 
     const CG_HID_EVENT_TAP: u32 = 0;
     const CG_EVENT_FLAG_MASK_COMMAND: u64 = 0x0010_0000;
     const KEY_CODE_V: u16 = 9;
+    const NO_ERR: i32 = 0;
+
+    #[repr(C)]
+    struct ProcessSerialNumber {
+        high_long_of_psn: u32,
+        low_long_of_psn: u32,
+    }
 
     #[link(name = "ApplicationServices", kind = "framework")]
     extern "C" {
+        fn AXIsProcessTrusted() -> bool;
         fn CGEventCreateKeyboardEvent(
             source: *const c_void,
             virtual_key: u16,
@@ -22,7 +34,56 @@ mod macos {
         fn CFRelease(cf: *const c_void);
     }
 
+    #[link(name = "Carbon", kind = "framework")]
+    extern "C" {
+        fn GetFrontProcess(psn: *mut ProcessSerialNumber) -> c_int;
+        fn GetProcessPID(psn: *const ProcessSerialNumber, pid: *mut c_int) -> c_int;
+        fn GetProcessForPID(pid: c_int, psn: *mut ProcessSerialNumber) -> c_int;
+        fn SetFrontProcess(psn: *const ProcessSerialNumber) -> c_int;
+    }
+
+    pub fn frontmost_pid() -> Option<i32> {
+        let mut psn = ProcessSerialNumber {
+            high_long_of_psn: 0,
+            low_long_of_psn: 0,
+        };
+        let mut pid = 0;
+
+        unsafe {
+            if GetFrontProcess(&mut psn) != NO_ERR {
+                return None;
+            }
+            if GetProcessPID(&psn, &mut pid) != NO_ERR {
+                return None;
+            }
+        }
+
+        Some(pid)
+    }
+
+    pub fn activate_pid(pid: i32) -> anyhow::Result<()> {
+        let mut psn = ProcessSerialNumber {
+            high_long_of_psn: 0,
+            low_long_of_psn: 0,
+        };
+
+        unsafe {
+            if GetProcessForPID(pid, &mut psn) != NO_ERR {
+                anyhow::bail!("could not find the app that had focus before recording");
+            }
+            if SetFrontProcess(&psn) != NO_ERR {
+                anyhow::bail!("could not reactivate the app that had focus before recording");
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn paste_shortcut() -> anyhow::Result<()> {
+        if unsafe { !AXIsProcessTrusted() } {
+            anyhow::bail!("Svara needs Accessibility permission to paste into other apps");
+        }
+
         unsafe {
             let key_down = CGEventCreateKeyboardEvent(std::ptr::null(), KEY_CODE_V, true);
             let key_up = CGEventCreateKeyboardEvent(std::ptr::null(), KEY_CODE_V, false);
@@ -49,45 +110,53 @@ mod macos {
     }
 }
 
-pub fn frontmost_bundle_identifier() -> Option<String> {
-    let output = Command::new("osascript")
-        .args([
-            "-e",
-            "tell application \"System Events\" to get bundle identifier of first application process whose frontmost is true",
-        ])
-        .output()
-        .ok()?;
-
-    if !output.status.success() {
-        return None;
-    }
-
-    let bundle_id = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if bundle_id.is_empty() || bundle_id == "com.viratmankali.svara" {
+pub fn capture_insertion_target() -> Option<InsertionTarget> {
+    let pid = frontmost_pid()?;
+    if pid as u32 == std::process::id() {
         None
     } else {
-        Some(bundle_id)
+        Some(InsertionTarget { pid })
     }
 }
 
-pub fn inject_text(text: &str, target_bundle_id: Option<&str>) -> anyhow::Result<()> {
+pub fn inject_text(text: &str, target: Option<InsertionTarget>) -> anyhow::Result<()> {
     let mut clipboard = arboard::Clipboard::new()?;
     let previous_clipboard = clipboard.get_text().ok();
 
     clipboard.set_text(text.to_string())?;
 
-    if let Some(bundle_id) = target_bundle_id {
-        let _ = Command::new("open").args(["-b", bundle_id]).status();
+    if let Some(target) = target {
+        activate_pid(target.pid)?;
     }
 
     thread::sleep(Duration::from_millis(140));
     paste_shortcut()?;
-    thread::sleep(Duration::from_millis(220));
+    thread::sleep(Duration::from_millis(900));
 
     if let Some(previous_clipboard) = previous_clipboard {
         let _ = clipboard.set_text(previous_clipboard);
     }
 
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn frontmost_pid() -> Option<i32> {
+    macos::frontmost_pid()
+}
+
+#[cfg(not(target_os = "macos"))]
+fn frontmost_pid() -> Option<i32> {
+    None
+}
+
+#[cfg(target_os = "macos")]
+fn activate_pid(pid: i32) -> anyhow::Result<()> {
+    macos::activate_pid(pid)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn activate_pid(_pid: i32) -> anyhow::Result<()> {
     Ok(())
 }
 

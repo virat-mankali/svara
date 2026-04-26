@@ -1,5 +1,6 @@
 use futures_util::StreamExt;
 use serde::Serialize;
+use std::process::Command;
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, State};
 use tauri_plugin_autostart::ManagerExt;
 
@@ -54,7 +55,7 @@ pub async fn toggle_recording(app: AppHandle) -> Result<(), String> {
 }
 
 async fn start_recording_inner(app: &AppHandle, state: &State<'_, AppState>) -> Result<(), String> {
-    *state.insertion_target.lock().unwrap() = inject::frontmost_bundle_identifier();
+    *state.insertion_target.lock().unwrap() = inject::capture_insertion_target();
 
     let device = state.config.lock().unwrap().audio_device.clone();
     state
@@ -114,14 +115,22 @@ async fn stop_recording_inner(
     let entry = if text.trim().is_empty() {
         None
     } else {
-        let target = state.insertion_target.lock().unwrap().clone();
+        let target = *state.insertion_target.lock().unwrap();
         let entry = state
             .history
             .lock()
             .unwrap()
             .insert_entry(&text, &source)
             .map_err(|error| error.to_string())?;
-        let _ = inject::inject_text(&text, target.as_deref());
+        if let Err(error) = inject::inject_text(&text, target) {
+            log::warn!("paste injection failed: {error:#}");
+            let _ = app.emit(
+                "transcription-error",
+                ErrorPayload {
+                    error: format!("Transcribed and saved, but paste failed: {error}"),
+                },
+            );
+        }
         Some(entry)
     };
 
@@ -358,4 +367,31 @@ async fn download_model(
 #[tauri::command]
 pub fn list_audio_devices() -> Result<Vec<String>, String> {
     audio::list_input_devices().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn open_accessibility_settings() -> Result<(), String> {
+    open_system_settings(
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+    )
+}
+
+#[tauri::command]
+pub fn open_microphone_settings() -> Result<(), String> {
+    open_system_settings(
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone",
+    )
+}
+
+fn open_system_settings(url: &str) -> Result<(), String> {
+    let status = Command::new("open")
+        .arg(url)
+        .status()
+        .map_err(|error| error.to_string())?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err("failed to open macOS System Settings".to_string())
+    }
 }

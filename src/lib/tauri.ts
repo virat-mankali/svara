@@ -38,3 +38,5 @@ export const downloadLocalModel = () => invoke<string>('download_local_model');
 export const getModelDownloadStatus = () =>
   invoke<ModelDownloadStatus>('get_model_download_status');
 export const listAudioDevices = () => invoke<string[]>('list_audio_devices');
+export const openAccessibilitySettings = () => invoke<void>('open_accessibility_settings');
+export const openMicrophoneSettings = () => invoke<void>('open_microphone_settings');

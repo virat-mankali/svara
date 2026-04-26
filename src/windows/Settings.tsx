@@ -23,6 +23,8 @@ import {
   getHistory,
   getSettings,
   listAudioDevices,
+  openAccessibilitySettings,
+  openMicrophoneSettings,
   saveSettings,
   toggleRecording,
 } from '../lib/tauri';
@@ -209,7 +211,7 @@ function HomePage({
           </button>
         </div>
 
-        {error && <p className="error-banner">{error}</p>}
+        {error && <ErrorBanner error={error} />}
 
         <div className="history-toolbar">
           <h2>Transcripts</h2>
@@ -365,6 +367,37 @@ function SidebarItem({
       {icon}
       {label}
     </button>
+  );
+}
+
+function ErrorBanner({ error }: { error: string }) {
+  const lower = error.toLowerCase();
+  const needsAccessibility = lower.includes('accessibility') || lower.includes('paste failed');
+  const needsMicrophone =
+    lower.includes('microphone') ||
+    lower.includes('input device') ||
+    lower.includes('no microphone audio');
+
+  return (
+    <div className="error-banner">
+      <p>{error}</p>
+      {(needsAccessibility || needsMicrophone) && (
+        <div className="error-actions">
+          {needsAccessibility && (
+            <button type="button" className="permission-button" onClick={openAccessibilitySettings}>
+              <SettingsIcon size={15} />
+              Open Accessibility
+            </button>
+          )}
+          {needsMicrophone && (
+            <button type="button" className="permission-button" onClick={openMicrophoneSettings}>
+              <Mic size={15} />
+              Open Microphone
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

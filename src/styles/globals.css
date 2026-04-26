@@ -173,6 +173,14 @@ select {
     @apply mb-5 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700;
   }
 
+  .error-actions {
+    @apply mt-3 flex flex-wrap gap-2;
+  }
+
+  .permission-button {
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-md border border-red-200 bg-white px-3 text-sm font-bold text-red-700 transition hover:border-red-300 hover:bg-red-100;
+  }
+
   .history-toolbar {
     @apply mb-4 flex items-center justify-between gap-3;
   }
