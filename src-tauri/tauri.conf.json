@@ -42,8 +42,8 @@
       {
         "label": "status",
         "title": "",
-        "width": 86,
-        "height": 34,
+        "width": 112,
+        "height": 28,
         "decorations": false,
         "transparent": true,
         "shadow": false,

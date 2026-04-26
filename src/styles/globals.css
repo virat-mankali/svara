@@ -24,6 +24,16 @@ body:not([data-window="status"]) {
   background: #fbfaf6;
 }
 
+html[data-window="status"],
+html[data-window="status"] body,
+html[data-window="status"] #root,
+body[data-window="status"],
+body[data-window="status"] #root {
+  overflow: hidden;
+  border-radius: 9999px;
+  background: transparent !important;
+}
+
 button,
 input,
 select {
@@ -340,20 +350,21 @@ select {
   }
 
   .status-shell {
-    @apply flex h-screen w-screen items-center justify-center bg-transparent;
+    @apply flex h-screen w-screen items-center justify-center overflow-hidden rounded-full bg-transparent p-0.5;
   }
 
   .flow-bar {
-    @apply flex h-7 w-[76px] items-center justify-center gap-2 bg-transparent;
+    @apply flex h-full w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-white/55 px-2 backdrop-blur-sm;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
   }
 
   .flow-wave {
-    @apply flex h-6 items-center gap-0.5;
+    @apply flex h-5 items-center gap-0.5;
   }
 
   .flow-wave span {
     @apply block w-1 rounded-full bg-[#151515];
-    height: 6px;
+    height: 5px;
     animation: flow-wave 780ms ease-in-out infinite;
     filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.72));
   }
@@ -379,22 +390,31 @@ select {
   }
 
   .flow-state {
-    @apply h-2 w-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.86)];
+    @apply ml-0.5 h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.86)];
   }
 
-  .flow-bar[data-state="working"] .flow-wave span {
-    animation-duration: 520ms;
+  .flow-bar[data-state="transcribing"] .flow-state {
+    @apply bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.86)];
+  }
+
+  .flow-bar[data-state="inserting"] .flow-state {
+    @apply bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.86)];
+  }
+
+  .flow-label {
+    @apply min-w-[78px] text-center text-[11px] font-semibold leading-none text-[#151515];
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.78);
   }
 }
 
 @keyframes flow-wave {
   0%,
   100% {
-    height: 5px;
+    height: 4px;
     opacity: 0.5;
   }
   50% {
-    height: 19px;
+    height: 16px;
     opacity: 1;
   }
 }

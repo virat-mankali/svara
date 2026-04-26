@@ -20,8 +20,10 @@ export default function App() {
   }, [updateSettings]);
 
   useEffect(() => {
+    document.documentElement.dataset.window = label;
     document.body.dataset.window = label;
     return () => {
+      delete document.documentElement.dataset.window;
       delete document.body.dataset.window;
     };
   }, [label]);
