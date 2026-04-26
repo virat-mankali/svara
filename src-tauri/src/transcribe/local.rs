@@ -14,7 +14,8 @@ pub async fn transcribe_local(wav_path: &Path, model_path: &str) -> anyhow::Resu
             .map(|sample| sample.map(|value| value as f32 / i16::MAX as f32))
             .collect::<Result<Vec<_>, _>>()?;
 
-        let ctx = WhisperContext::new_with_params(&model_path, WhisperContextParameters::default())?;
+        let ctx =
+            WhisperContext::new_with_params(&model_path, WhisperContextParameters::default())?;
         let mut state = ctx.create_state()?;
         let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
         params.set_language(Some("en"));

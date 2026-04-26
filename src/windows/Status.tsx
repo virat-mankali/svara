@@ -6,15 +6,16 @@ export function Status() {
   const isRecording = useAppStore((state) => state.isRecording);
   const isTranscribing = useAppStore((state) => state.isTranscribing);
   const lastText = useAppStore((state) => state.lastText);
+  const error = useAppStore((state) => state.error);
 
   useEffect(() => {
-    if (!isRecording && !isTranscribing && lastText) {
+    if (!isRecording && !isTranscribing && (lastText || error)) {
       const timeout = window.setTimeout(() => {
         getCurrentWindow().hide();
       }, 1600);
       return () => window.clearTimeout(timeout);
     }
-  }, [isRecording, isTranscribing, lastText]);
+  }, [error, isRecording, isTranscribing, lastText]);
 
   const state = isRecording ? 'recording' : isTranscribing ? 'transcribing' : 'inserting';
 

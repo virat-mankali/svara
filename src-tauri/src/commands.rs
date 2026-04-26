@@ -69,10 +69,20 @@ async fn stop_recording_inner(
     app: &AppHandle,
     state: &State<'_, AppState>,
 ) -> Result<String, String> {
-    let wav_path = state
-        .recorder
-        .stop_to_wav()
-        .map_err(|error| error.to_string())?;
+    let wav_path = match state.recorder.stop_to_wav() {
+        Ok(path) => path,
+        Err(error) => {
+            let message = error.to_string();
+            let _ = app.emit("recording-stopped", ());
+            let _ = app.emit(
+                "transcription-error",
+                ErrorPayload {
+                    error: message.clone(),
+                },
+            );
+            return Err(message);
+        }
+    };
 
     let _ = app.emit("recording-stopped", ());
     let _ = app.emit("transcription-started", ());

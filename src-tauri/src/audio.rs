@@ -8,8 +8,10 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, Stream, StreamConfig};
 
 const TARGET_SAMPLE_RATE: u32 = 16_000;
-const MIN_VOICE_RMS: f32 = 0.0015;
-const MIN_VOICE_PEAK: f32 = 0.02;
+const MIN_AUDIO_RMS: f32 = 0.00005;
+const MIN_AUDIO_PEAK: f32 = 0.001;
+const TARGET_PEAK: f32 = 0.85;
+const MAX_NORMALIZE_GAIN: f32 = 30.0;
 
 pub struct AudioController {
     tx: mpsc::Sender<AudioRequest>,
@@ -182,12 +184,13 @@ impl RecorderInner {
             linear_resample(&raw, self.sample_rate, TARGET_SAMPLE_RATE)
         };
 
-        if is_effectively_silent(&samples) {
+        if !has_audio_signal(&samples) {
             anyhow::bail!(
                 "recording was too quiet or silent; check the selected microphone and try again"
             );
         }
 
+        let samples = normalize_samples(&samples);
         let path = std::env::temp_dir().join("svara_recording.wav");
         write_wav(&path, &samples)?;
         Ok(path)
@@ -259,9 +262,9 @@ fn linear_resample(samples: &[f32], from_rate: u32, to_rate: u32) -> Vec<f32> {
     out
 }
 
-fn is_effectively_silent(samples: &[f32]) -> bool {
+fn signal_metrics(samples: &[f32]) -> (f32, f32) {
     if samples.is_empty() {
-        return true;
+        return (0.0, 0.0);
     }
 
     let mut sum_squares = 0.0f32;
@@ -274,7 +277,25 @@ fn is_effectively_silent(samples: &[f32]) -> bool {
     }
 
     let rms = (sum_squares / samples.len() as f32).sqrt();
-    rms < MIN_VOICE_RMS || peak < MIN_VOICE_PEAK
+    (rms, peak)
+}
+
+fn has_audio_signal(samples: &[f32]) -> bool {
+    let (rms, peak) = signal_metrics(samples);
+    rms >= MIN_AUDIO_RMS || peak >= MIN_AUDIO_PEAK
+}
+
+fn normalize_samples(samples: &[f32]) -> Vec<f32> {
+    let (_, peak) = signal_metrics(samples);
+    if peak <= 0.0 {
+        return samples.to_vec();
+    }
+
+    let gain = (TARGET_PEAK / peak).min(MAX_NORMALIZE_GAIN).max(1.0);
+    samples
+        .iter()
+        .map(|sample| (sample * gain).clamp(-1.0, 1.0))
+        .collect()
 }
 
 fn write_wav(path: &PathBuf, samples: &[f32]) -> anyhow::Result<()> {

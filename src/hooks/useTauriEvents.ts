@@ -37,6 +37,7 @@ export function useTauriEvents() {
         }
       }),
       listen<ErrorPayload>('transcription-error', (event) => {
+        setRecording(false);
         setTranscribing(false);
         setError(event.payload.error);
       }),
