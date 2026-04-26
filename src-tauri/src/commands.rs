@@ -225,7 +225,24 @@ pub fn get_groq_api_key(state: State<'_, AppState>) -> String {
 
 #[tauri::command]
 pub fn get_model_download_status(state: State<'_, AppState>) -> ModelDownloadStatus {
-    state.download.lock().unwrap().clone()
+    let model_path = state.config.lock().unwrap().local_model_path.clone();
+    let mut status = state.download.lock().unwrap();
+
+    if !status.is_downloading {
+        if model_path
+            .as_deref()
+            .map(|path| std::path::Path::new(path).is_file())
+            .unwrap_or(false)
+        {
+            status.percent = 100.0;
+            status.message = "Downloaded".to_string();
+        } else if status.percent >= 100.0 {
+            status.percent = 0.0;
+            status.message = "Not downloaded".to_string();
+        }
+    }
+
+    status.clone()
 }
 
 #[tauri::command]
