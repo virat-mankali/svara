@@ -42,10 +42,11 @@
       {
         "label": "status",
         "title": "",
-        "width": 380,
-        "height": 86,
+        "width": 86,
+        "height": 34,
         "decorations": false,
         "transparent": true,
+        "shadow": false,
         "alwaysOnTop": true,
         "visible": false,
         "skipTaskbar": true,

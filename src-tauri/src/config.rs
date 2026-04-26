@@ -17,6 +17,8 @@ pub struct AppConfig {
     pub hotkey: String,
     pub audio_device: Option<String>,
     pub local_model_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub groq_api_key: Option<String>,
     pub autostart: bool,
 }
 
@@ -27,6 +29,7 @@ impl Default for AppConfig {
             hotkey: "CmdOrCtrl+Shift+Space".to_string(),
             audio_device: None,
             local_model_path: Some(default_model_path().to_string_lossy().to_string()),
+            groq_api_key: None,
             autostart: false,
         }
     }

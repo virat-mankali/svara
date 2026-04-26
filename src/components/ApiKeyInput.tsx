@@ -1,5 +1,5 @@
 import { Eye, EyeOff, KeyRound, Save } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getGroqApiKey, setGroqApiKey } from '../lib/tauri';
 
 export function ApiKeyInput() {
@@ -7,6 +7,14 @@ export function ApiKeyInput() {
   const [visible, setVisible] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    getGroqApiKey()
+      .then((savedKey) => {
+        setLoaded(Boolean(savedKey));
+      })
+      .catch(() => undefined);
+  }, []);
 
   async function save() {
     await setGroqApiKey(key);
@@ -34,7 +42,7 @@ export function ApiKeyInput() {
             className="input pl-9 pr-10"
             type={visible ? 'text' : 'password'}
             value={key}
-            placeholder={loaded ? 'Saved in Keychain' : 'Paste Groq key to update'}
+            placeholder={loaded ? 'Saved locally' : 'Paste Groq key to update'}
             onChange={(event) => setKey(event.target.value)}
           />
           <button
@@ -52,7 +60,7 @@ export function ApiKeyInput() {
         </button>
       </div>
       <button className="text-xs font-semibold text-stone-500 hover:text-ink" type="button" onClick={loadSavedKey}>
-        Load saved key from Keychain
+        Load saved key
       </button>
     </div>
   );

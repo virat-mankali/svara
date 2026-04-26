@@ -17,7 +17,12 @@ pub async fn transcribe_groq(wav_path: &Path, api_key: &str) -> anyhow::Result<S
                 .mime_str("audio/wav")?,
         )
         .text("model", "whisper-large-v3-turbo")
-        .text("response_format", "json");
+        .text("response_format", "json")
+        .text("temperature", "0")
+        .text(
+            "prompt",
+            "Transcribe only clear spoken words. If there is no clear speech, return nothing.",
+        );
 
     let response = reqwest::Client::new()
         .post("https://api.groq.com/openai/v1/audio/transcriptions")

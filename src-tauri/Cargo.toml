@@ -29,7 +29,6 @@ cpal = "0.15"
 dirs = "6"
 futures-util = "0.3"
 hound = "3.5"
-keyring = "2"
 log = "0.4"
 reqwest = { version = "0.12", features = ["multipart", "json", "stream"] }
 rubato = "0.14"

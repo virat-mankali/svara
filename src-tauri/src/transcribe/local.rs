@@ -39,6 +39,6 @@ pub async fn transcribe_local(wav_path: &Path, model_path: &str) -> anyhow::Resu
 #[cfg(not(feature = "local-whisper"))]
 pub async fn transcribe_local(_wav_path: &Path, _model_path: &str) -> anyhow::Result<String> {
     anyhow::bail!(
-        "Local Whisper support is not compiled into this build. Rebuild with `cargo tauri build --features local-whisper`."
+        "Local Whisper support is not compiled into this build. Use `npm run tauri dev` for local dev or rebuild with `cargo tauri build --features local-whisper`."
     )
 }

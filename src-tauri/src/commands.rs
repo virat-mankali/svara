@@ -89,7 +89,12 @@ async fn stop_recording_inner(
         Ok(text) => text,
         Err(error) => {
             let message = error.to_string();
-            let _ = app.emit("transcription-error", ErrorPayload { error: message.clone() });
+            let _ = app.emit(
+                "transcription-error",
+                ErrorPayload {
+                    error: message.clone(),
+                },
+            );
             return Err(message);
         }
     };
@@ -120,7 +125,10 @@ async fn stop_recording_inner(
 
 fn show_status(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("status") {
-        if let Ok(Some(monitor)) = window.current_monitor().or_else(|_| window.primary_monitor()) {
+        if let Ok(Some(monitor)) = window
+            .current_monitor()
+            .or_else(|_| window.primary_monitor())
+        {
             if let Ok(size) = window.outer_size() {
                 let work_area = monitor.work_area();
                 let x = work_area.position.x
@@ -167,9 +175,12 @@ pub fn clear_history(state: State<'_, AppState>) -> Result<(), String> {
 #[tauri::command]
 pub fn save_settings(
     app: AppHandle,
-    settings: AppConfig,
+    mut settings: AppConfig,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
+    if settings.groq_api_key.is_none() {
+        settings.groq_api_key = state.config.lock().unwrap().groq_api_key.clone();
+    }
     settings.save().map_err(|error| error.to_string())?;
     *state.config.lock().unwrap() = settings.clone();
     reregister_hotkey(&app, &settings.hotkey)?;
@@ -192,13 +203,24 @@ pub fn get_settings(state: State<'_, AppState>) -> AppConfig {
 }
 
 #[tauri::command]
-pub fn set_groq_api_key(key: String) -> Result<(), String> {
-    crate::keychain::save_api_key(&key).map_err(|error| error.to_string())
+pub fn set_groq_api_key(key: String, state: State<'_, AppState>) -> Result<(), String> {
+    let mut settings = state.config.lock().unwrap();
+    settings.groq_api_key = match key.trim() {
+        "" => None,
+        value => Some(value.to_string()),
+    };
+    settings.save().map_err(|error| error.to_string())
 }
 
 #[tauri::command]
-pub fn get_groq_api_key() -> String {
-    crate::keychain::get_api_key().unwrap_or_default()
+pub fn get_groq_api_key(state: State<'_, AppState>) -> String {
+    state
+        .config
+        .lock()
+        .unwrap()
+        .groq_api_key
+        .clone()
+        .unwrap_or_default()
 }
 
 #[tauri::command]

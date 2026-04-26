@@ -7,6 +7,7 @@ export interface AppSettings {
   hotkey: string;
   audio_device: string | null;
   local_model_path: string | null;
+  groq_api_key?: string | null;
   autostart: boolean;
 }
 

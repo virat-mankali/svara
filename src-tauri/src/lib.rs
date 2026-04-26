@@ -3,7 +3,6 @@ mod commands;
 mod config;
 mod history;
 mod inject;
-mod keychain;
 mod transcribe;
 
 use std::str::FromStr;
@@ -96,8 +95,8 @@ fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
 }
 
 fn register_hotkey(app: &AppHandle, hotkey: &str) -> anyhow::Result<()> {
-    let shortcut = Shortcut::from_str(hotkey)
-        .with_context(|| format!("could not parse hotkey: {hotkey}"))?;
+    let shortcut =
+        Shortcut::from_str(hotkey).with_context(|| format!("could not parse hotkey: {hotkey}"))?;
     app.global_shortcut().unregister_all()?;
     app.global_shortcut().register(shortcut)?;
     Ok(())

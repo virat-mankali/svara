@@ -60,8 +60,13 @@ export function Settings() {
   }
 
   async function persist() {
-    await saveSettings(settings);
-    updateSettings(settings);
+    await persistSettings(settings);
+  }
+
+  async function persistSettings(next: AppSettings) {
+    setSettings(next);
+    await saveSettings(next);
+    updateSettings(next);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1600);
   }
@@ -156,6 +161,7 @@ export function Settings() {
             saved={saved}
             settings={settings}
             setSettings={setSettings}
+            onSettingsChange={persistSettings}
             onPersist={persist}
           />
         )}
@@ -237,14 +243,22 @@ function SettingsPage({
   saved,
   settings,
   setSettings,
+  onSettingsChange,
   onPersist,
 }: {
   devices: string[];
   saved: boolean;
   settings: AppSettings;
   setSettings: Dispatch<SetStateAction<AppSettings>>;
+  onSettingsChange: (settings: AppSettings) => void;
   onPersist: () => void;
 }) {
+  function updateSetting(patch: Partial<AppSettings>) {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    onSettingsChange(next);
+  }
+
   return (
     <div className="settings-page">
       <section className="settings-hero">
@@ -272,7 +286,7 @@ function SettingsPage({
           <h2>Voice</h2>
           <ToggleBackend
             value={settings.backend}
-            onChange={(backend) => setSettings((current) => ({ ...current, backend }))}
+            onChange={(backend) => updateSetting({ backend })}
           />
           <ApiKeyInput />
           <ModelDownloader path={settings.local_model_path} />
@@ -287,7 +301,7 @@ function SettingsPage({
             <div className="mt-2">
               <HotkeyRecorder
                 value={settings.hotkey}
-                onChange={(hotkey) => setSettings((current) => ({ ...current, hotkey }))}
+                onChange={(hotkey) => updateSetting({ hotkey })}
               />
             </div>
           </div>
@@ -300,12 +314,7 @@ function SettingsPage({
               id="audio-device"
               className="input mt-2"
               value={settings.audio_device ?? ''}
-              onChange={(event) =>
-                setSettings((current) => ({
-                  ...current,
-                  audio_device: event.target.value || null,
-                }))
-              }
+              onChange={(event) => updateSetting({ audio_device: event.target.value || null })}
             >
               <option value="">System default</option>
               {devices.map((device) => (
@@ -325,9 +334,7 @@ function SettingsPage({
               <input
                 type="checkbox"
                 checked={settings.autostart}
-                onChange={(event) =>
-                  setSettings((current) => ({ ...current, autostart: event.target.checked }))
-                }
+                onChange={(event) => updateSetting({ autostart: event.target.checked })}
               />
               <span />
             </label>
