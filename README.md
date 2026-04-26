@@ -1,30 +1,49 @@
-<div align="center">
-  <h1>Svara</h1>
-  <p><strong>A fast, privacy-first macOS voice-to-text tray app.</strong></p>
-  <p>
-    Press a global shortcut, speak naturally, and let Svara transcribe your voice into the app you were already using.
-  </p>
+<table>
+  <tr>
+    <td>
+      <h1>Svara</h1>
+      <p><strong>Speak. Paste. Done.</strong></p>
+      <p>
+        A fast, privacy-first macOS voice-to-text tray app that turns your voice into clean text anywhere you type.
+      </p>
+      <p>
+        Press a shortcut, say what you want, and Svara drops the transcript into the app you were already using.
+      </p>
+    </td>
+    <td width="180" align="right">
+      <img src="src-tauri/icons/svara.png" alt="Svara app logo" width="150">
+    </td>
+  </tr>
+</table>
 
-  <p>
-    <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2.x-24C8DB?style=for-the-badge&logo=tauri&logoColor=white">
-    <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=111111">
-    <img alt="Rust" src="https://img.shields.io/badge/Rust-native-000000?style=for-the-badge&logo=rust&logoColor=white">
-    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-ready-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
-    <img alt="macOS" src="https://img.shields.io/badge/macOS-focused-111111?style=for-the-badge&logo=apple&logoColor=white">
-  </p>
-</div>
+<p align="center">
+  <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2.x-24C8DB?style=for-the-badge&logo=tauri&logoColor=white">
+  <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=111111">
+  <img alt="Rust" src="https://img.shields.io/badge/Rust-native-000000?style=for-the-badge&logo=rust&logoColor=white">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-ready-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
+  <img alt="macOS" src="https://img.shields.io/badge/macOS-focused-111111?style=for-the-badge&logo=apple&logoColor=white">
+</p>
 
 ---
 
 ## What Is Svara?
 
-Svara is a desktop dictation assistant for macOS. It runs from the system tray, listens through a configurable global hotkey, transcribes microphone audio, and pastes the finished text into the application that had focus before recording began.
+Svara is a tiny dictation layer for your Mac. It sits in the menu bar, listens when you press a hotkey, transcribes your voice, and pastes the result exactly where you were working.
 
-It is designed for people who want the speed of cloud transcription when they need it, plus an on-device path when privacy or offline work matters more.
+Use Groq when you want speed. Use Local Whisper when you want everything on-device. Either way, Svara keeps the workflow simple: talk once, get text instantly.
+
+## At a Glance
+
+| | |
+| --- | --- |
+| 🎙️ **One shortcut** | Start and stop dictation from anywhere on macOS. |
+| 🔒 **Local-first** | Keep transcript history on your Mac, with optional fully local transcription. |
+| ⚡ **Fast when needed** | Switch to Groq Cloud for quick Whisper transcription. |
+| 🧠 **Remembers context** | Restores the previous app and pastes your text where you left off. |
 
 ## Highlights
 
-- **Global dictation shortcut**: toggle recording from anywhere with the default `CmdOrCtrl+Shift+Space` shortcut.
+- **Global dictation shortcut**: toggle recording from anywhere with the default `CmdOrCtrl+Shift+Space`.
 - **Automatic text insertion**: Svara restores the previously focused app and simulates paste after transcription.
 - **Two transcription modes**: use Groq Cloud with `whisper-large-v3-turbo` or compile with Local Whisper support.
 - **Local transcript history**: the latest 100 non-empty transcripts are stored in a local SQLite database.
@@ -59,21 +78,6 @@ flowchart LR
 | **Status Overlay** | Small floating indicator for recording, transcribing, and insertion states. |
 | **Tray Menu** | Open Settings, open History, or quit Svara from the macOS menu bar. |
 
-## Tech Stack
-
-| Layer | Technology |
-| --- | --- |
-| Desktop runtime | Tauri 2 |
-| Native backend | Rust |
-| Frontend | React 18, TypeScript, Vite |
-| Styling | Tailwind CSS, Lucide icons |
-| State | Zustand |
-| Audio capture | `cpal`, `hound` |
-| Cloud transcription | Groq OpenAI-compatible audio transcription API |
-| Local transcription | `whisper-rs` behind the `local-whisper` feature |
-| Storage | SQLite via `rusqlite` |
-| Text insertion | macOS Accessibility APIs plus clipboard paste |
-
 ## Install Svara
 
 **Current version:** `v0.1.0`
@@ -85,7 +89,9 @@ The easiest way to use Svara is to install the macOS DMG. No cloning, no termina
 3. Drag **Svara** into your Applications folder.
 4. Launch Svara and grant the macOS permissions it asks for.
 
-For a fully local workflow, choose **Local Whisper** in Settings and download the model from inside the app. In local mode, your audio transcription runs on your Mac and your transcript history stays on your Mac.
+That's it. You now have a menu-bar voice assistant that can run locally on your Mac.
+
+For the private workflow, choose **Local Whisper** in Settings and download the model from inside the app. In local mode, your audio transcription runs on your Mac and your transcript history stays on your Mac.
 
 Groq Cloud is also available if you prefer cloud transcription speed. That mode requires a Groq API key and sends recorded audio to Groq for processing.
 
@@ -174,6 +180,21 @@ Svara persists these settings in `config.json`:
 | `local_model_path` | Path to the local Whisper model. | Platform data directory |
 | `groq_api_key` | Optional Groq API key. | `null` |
 | `autostart` | Launch Svara at login. | `false` |
+
+## Tech Stack
+
+| Layer | Technology |
+| --- | --- |
+| Desktop runtime | Tauri 2 |
+| Native backend | Rust |
+| Frontend | React 18, TypeScript, Vite |
+| Styling | Tailwind CSS, Lucide icons |
+| State | Zustand |
+| Audio capture | `cpal`, `hound` |
+| Cloud transcription | Groq OpenAI-compatible audio transcription API |
+| Local transcription | `whisper-rs` behind the `local-whisper` feature |
+| Storage | SQLite via `rusqlite` |
+| Text insertion | macOS Accessibility APIs plus clipboard paste |
 
 ## Project Structure
 
