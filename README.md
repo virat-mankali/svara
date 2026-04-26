@@ -3,6 +3,7 @@
     <td>
       <h1>Svara</h1>
       <p><strong>Speak. Paste. Done.</strong></p>
+      <p><sub>~ Built with ❤️ by Virat Mankali 🍻</sub></p>
       <p>
         A fast, privacy-first macOS voice-to-text tray app that turns your voice into clean text anywhere you type.
       </p>
