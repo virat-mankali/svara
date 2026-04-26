@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 
 const args = process.argv.slice(2);
 
-if (args[0] === 'dev') {
+if (args[0] === 'dev' || args[0] === 'build') {
   addFeature(args, 'local-whisper');
 }
 
