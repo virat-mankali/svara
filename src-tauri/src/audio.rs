@@ -186,7 +186,7 @@ impl RecorderInner {
 
         if !has_audio_signal(&samples) {
             anyhow::bail!(
-                "recording was too quiet or silent; check the selected microphone and try again"
+                "no microphone audio was captured; check Svara's Microphone permission and selected input device"
             );
         }
 
