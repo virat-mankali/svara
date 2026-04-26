@@ -1,22 +1,17 @@
 import {
-  Bell,
   BookOpen,
   Clipboard,
   Home,
   Mic,
   MoreVertical,
-  PanelLeft,
   Power,
   RefreshCw,
   RotateCcw,
-  Scissors,
   Settings as SettingsIcon,
   Sparkles,
   Trash2,
-  Type,
-  Wand2,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { ApiKeyInput } from '../components/ApiKeyInput';
 import { HotkeyRecorder } from '../components/HotkeyRecorder';
 import { ModelDownloader } from '../components/ModelDownloader';
@@ -34,6 +29,7 @@ import {
 import { useAppStore } from '../store/useAppStore';
 
 type GroupedHistory = Array<[string, TranscriptionEntry[]]>;
+type Page = 'home' | 'settings';
 
 export function Settings() {
   const storeSettings = useAppStore((state) => state.settings);
@@ -43,6 +39,7 @@ export function Settings() {
   const isRecording = useAppStore((state) => state.isRecording);
   const isTranscribing = useAppStore((state) => state.isTranscribing);
   const error = useAppStore((state) => state.error);
+  const [page, setPage] = useState<Page>('home');
   const [settings, setSettings] = useState<AppSettings>(storeSettings);
   const [devices, setDevices] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
@@ -88,12 +85,6 @@ export function Settings() {
   return (
     <main className="app-shell bg-[#f7f5ef] text-[#262522]">
       <aside className="sidebar">
-        <div className="window-dots" aria-hidden="true">
-          <span className="bg-[#ef6a5d]" />
-          <span className="bg-[#f4bf4f]" />
-          <span className="bg-[#62c554]" />
-        </div>
-
         <div className="brand-row">
           <div className="brand-mark">
             <span />
@@ -106,12 +97,13 @@ export function Settings() {
         </div>
 
         <nav className="nav-list" aria-label="Svara">
-          <SidebarItem icon={<Home size={18} />} label="Home" active />
+          <SidebarItem
+            icon={<Home size={18} />}
+            label="Home"
+            active={page === 'home'}
+            onClick={() => setPage('home')}
+          />
           <SidebarItem icon={<BookOpen size={18} />} label="Dictionary" />
-          <SidebarItem icon={<Scissors size={18} />} label="Snippets" />
-          <SidebarItem icon={<Type size={18} />} label="Style" />
-          <SidebarItem icon={<Wand2 size={18} />} label="Transforms" />
-          <SidebarItem icon={<Clipboard size={18} />} label="Scratchpad" />
         </nav>
 
         <div className="sidebar-spacer" />
@@ -125,149 +117,224 @@ export function Settings() {
         </div>
 
         <nav className="nav-list nav-list-bottom" aria-label="Settings">
-          <SidebarItem icon={<SettingsIcon size={18} />} label="Settings" />
+          <SidebarItem
+            icon={<SettingsIcon size={18} />}
+            label="Settings"
+            active={page === 'settings'}
+            onClick={() => setPage('settings')}
+          />
           <SidebarItem icon={<Sparkles size={18} />} label="Help" />
         </nav>
       </aside>
 
       <section className="workspace-panel">
         <header className="topbar">
-          <button className="icon-button" type="button" aria-label="Toggle sidebar">
-            <PanelLeft size={18} />
-          </button>
-          <div className="topbar-actions">
-            <button className="icon-button" type="button" aria-label="Notifications">
-              <Bell size={18} />
-            </button>
-            <button className="record-button" type="button" onClick={toggleRecording}>
-              {isRecording ? <Power size={18} /> : <Mic size={18} />}
-              {isRecording ? 'Stop' : isTranscribing ? 'Working' : 'Record'}
-            </button>
+          <div className="topbar-title">
+            <strong>{page === 'settings' ? 'Settings' : 'Home'}</strong>
+            <span>Svara Local</span>
           </div>
+          <button className="record-button" type="button" onClick={toggleRecording}>
+            {isRecording ? <Power size={18} /> : <Mic size={18} />}
+            {isRecording ? 'Stop' : isTranscribing ? 'Working' : 'Record'}
+          </button>
         </header>
 
-        <div className="home-grid">
-          <section className="content-column">
-            <div className="hero-row">
-              <div>
-                <h1>Welcome back, snazzl</h1>
-                <p>Svara is ready for your next dictation.</p>
-              </div>
-            </div>
-
-            <div className="promo-banner">
-              <div>
-                <h2>Make Svara sound like you</h2>
-                <p>Choose your backend, save your hotkey, and keep every transcript close.</p>
-              </div>
-              <button className="light-button" type="button" onClick={toggleRecording}>
-                Start now
-              </button>
-            </div>
-
-            {error && <p className="error-banner">{error}</p>}
-
-            <div className="history-toolbar">
-              <h2>Transcripts</h2>
-              <button className="secondary-button" type="button" onClick={refreshHistory}>
-                <RefreshCw size={16} />
-                Refresh
-              </button>
-            </div>
-
-            <TranscriptTimeline grouped={grouped} onDelete={removeEntry} />
-          </section>
-
-          <aside className="right-rail">
-            <section className="stats-card">
-              <Stat value={compactNumber(totalWords)} label="total words" />
-              <Stat value={String(latestWords)} label="latest words" />
-              <Stat value={String(todayCount)} label="today" />
-            </section>
-
-            <section className="settings-card">
-              <h2>Voice</h2>
-              <ToggleBackend
-                value={settings.backend}
-                onChange={(backend) => setSettings((current) => ({ ...current, backend }))}
-              />
-              <ApiKeyInput />
-              <ModelDownloader path={settings.local_model_path} />
-            </section>
-
-            <section className="settings-card">
-              <h2>Controls</h2>
-              <div>
-                <label className="field-label" htmlFor="hotkey">
-                  Global Hotkey
-                </label>
-                <div className="mt-2">
-                  <HotkeyRecorder
-                    value={settings.hotkey}
-                    onChange={(hotkey) => setSettings((current) => ({ ...current, hotkey }))}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="field-label" htmlFor="audio-device">
-                  Audio Input
-                </label>
-                <select
-                  id="audio-device"
-                  className="input mt-2"
-                  value={settings.audio_device ?? ''}
-                  onChange={(event) =>
-                    setSettings((current) => ({
-                      ...current,
-                      audio_device: event.target.value || null,
-                    }))
-                  }
-                >
-                  <option value="">System default</option>
-                  {devices.map((device) => (
-                    <option key={device} value={device}>
-                      {device}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <label className="field-label">Launch at Login</label>
-                  <p className="mt-1 text-sm text-stone-600">Start Svara with macOS.</p>
-                </div>
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    checked={settings.autostart}
-                    onChange={(event) =>
-                      setSettings((current) => ({ ...current, autostart: event.target.checked }))
-                    }
-                  />
-                  <span />
-                </label>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={() => getSettings().then(setSettings)}
-                >
-                  <RotateCcw size={16} />
-                  Revert
-                </button>
-                <button className="primary-button w-28" type="button" onClick={persist}>
-                  {saved ? 'Saved' : 'Save'}
-                </button>
-              </div>
-            </section>
-          </aside>
-        </div>
+        {page === 'home' ? (
+          <HomePage
+            error={error}
+            grouped={grouped}
+            historyCount={history.length}
+            latestWords={latestWords}
+            todayCount={todayCount}
+            totalWords={totalWords}
+            onDelete={removeEntry}
+            onRefresh={refreshHistory}
+          />
+        ) : (
+          <SettingsPage
+            devices={devices}
+            saved={saved}
+            settings={settings}
+            setSettings={setSettings}
+            onPersist={persist}
+          />
+        )}
       </section>
     </main>
+  );
+}
+
+function HomePage({
+  error,
+  grouped,
+  historyCount,
+  latestWords,
+  todayCount,
+  totalWords,
+  onDelete,
+  onRefresh,
+}: {
+  error: string | null;
+  grouped: GroupedHistory;
+  historyCount: number;
+  latestWords: number;
+  todayCount: number;
+  totalWords: number;
+  onDelete: (id: string) => void;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className="home-grid">
+      <section className="content-column">
+        <div className="hero-row">
+          <div>
+            <h1>Welcome back, virat</h1>
+            <p>Svara is ready for your next dictation.</p>
+          </div>
+        </div>
+
+        <div className="promo-banner">
+          <div>
+            <h2>Make Svara sound like you</h2>
+            <p>Press the shortcut, speak naturally, and keep every transcript close.</p>
+          </div>
+          <button className="light-button" type="button" onClick={toggleRecording}>
+            Start now
+          </button>
+        </div>
+
+        {error && <p className="error-banner">{error}</p>}
+
+        <div className="history-toolbar">
+          <h2>Transcripts</h2>
+          <button className="secondary-button" type="button" onClick={onRefresh}>
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+        </div>
+
+        <TranscriptTimeline grouped={grouped} onDelete={onDelete} />
+      </section>
+
+      <aside className="right-rail">
+        <section className="stats-card">
+          <Stat value={compactNumber(totalWords)} label="total words" />
+          <Stat value={String(latestWords)} label="latest words" />
+          <Stat value={String(todayCount)} label="today" />
+        </section>
+
+        <section className="stats-card">
+          <Stat value={String(historyCount)} label="saved transcripts" />
+          <Stat value="100" label="history limit" />
+        </section>
+      </aside>
+    </div>
+  );
+}
+
+function SettingsPage({
+  devices,
+  saved,
+  settings,
+  setSettings,
+  onPersist,
+}: {
+  devices: string[];
+  saved: boolean;
+  settings: AppSettings;
+  setSettings: Dispatch<SetStateAction<AppSettings>>;
+  onPersist: () => void;
+}) {
+  return (
+    <div className="settings-page">
+      <section className="settings-hero">
+        <div>
+          <h1>Settings</h1>
+          <p>Voice backend, hotkey, microphone, startup, and model controls.</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => getSettings().then(setSettings)}
+          >
+            <RotateCcw size={16} />
+            Revert
+          </button>
+          <button className="primary-button w-28" type="button" onClick={onPersist}>
+            {saved ? 'Saved' : 'Save'}
+          </button>
+        </div>
+      </section>
+
+      <div className="settings-layout">
+        <section className="settings-card settings-card-large">
+          <h2>Voice</h2>
+          <ToggleBackend
+            value={settings.backend}
+            onChange={(backend) => setSettings((current) => ({ ...current, backend }))}
+          />
+          <ApiKeyInput />
+          <ModelDownloader path={settings.local_model_path} />
+        </section>
+
+        <section className="settings-card settings-card-large">
+          <h2>Controls</h2>
+          <div>
+            <label className="field-label" htmlFor="hotkey">
+              Global Hotkey
+            </label>
+            <div className="mt-2">
+              <HotkeyRecorder
+                value={settings.hotkey}
+                onChange={(hotkey) => setSettings((current) => ({ ...current, hotkey }))}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="field-label" htmlFor="audio-device">
+              Audio Input
+            </label>
+            <select
+              id="audio-device"
+              className="input mt-2"
+              value={settings.audio_device ?? ''}
+              onChange={(event) =>
+                setSettings((current) => ({
+                  ...current,
+                  audio_device: event.target.value || null,
+                }))
+              }
+            >
+              <option value="">System default</option>
+              {devices.map((device) => (
+                <option key={device} value={device}>
+                  {device}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="settings-toggle-row">
+            <div>
+              <label className="field-label">Launch at Login</label>
+              <p>Start Svara with macOS.</p>
+            </div>
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={settings.autostart}
+                onChange={(event) =>
+                  setSettings((current) => ({ ...current, autostart: event.target.checked }))
+                }
+              />
+              <span />
+            </label>
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }
 
@@ -275,13 +342,19 @@ function SidebarItem({
   icon,
   label,
   active = false,
+  onClick,
 }: {
   icon: ReactNode;
   label: string;
   active?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <button className={`sidebar-item ${active ? 'sidebar-item-active' : ''}`} type="button">
+    <button
+      className={`sidebar-item ${active ? 'sidebar-item-active' : ''}`}
+      type="button"
+      onClick={onClick}
+    >
       {icon}
       {label}
     </button>

@@ -42,8 +42,8 @@
       {
         "label": "status",
         "title": "",
-        "width": 230,
-        "height": 72,
+        "width": 380,
+        "height": 86,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,

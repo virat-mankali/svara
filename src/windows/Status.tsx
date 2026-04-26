@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Loader2 } from 'lucide-react';
+import { Mic } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 
 export function Status() {
@@ -12,24 +12,38 @@ export function Status() {
     if (!isRecording && !isTranscribing && lastText) {
       const timeout = window.setTimeout(() => {
         getCurrentWindow().hide();
-      }, 2000);
+      }, 1600);
       return () => window.clearTimeout(timeout);
     }
   }, [isRecording, isTranscribing, lastText]);
 
-  const label = isRecording ? 'Recording' : isTranscribing ? 'Transcribing' : 'Done';
+  const title = isRecording ? 'Listening' : isTranscribing ? 'Polishing' : 'Inserted';
+  const subtitle = isRecording ? 'Speak naturally' : isTranscribing ? 'Turning voice into text' : 'Ready';
+  const stateClass = isRecording
+    ? 'flow-state'
+    : isTranscribing
+      ? 'flow-state flow-state-working'
+      : 'flow-state flow-state-idle';
 
   return (
     <main className="status-shell" data-tauri-drag-region>
-      <div className="status-pill" data-tauri-drag-region>
-        {isRecording ? (
-          <span className="recording-dot" />
-        ) : isTranscribing ? (
-          <Loader2 className="animate-spin text-leaf" size={18} />
-        ) : (
-          <span className="done-dot" />
-        )}
-        <span className="text-sm font-medium">{label}</span>
+      <div className="flow-bar" data-tauri-drag-region>
+        <div className="flow-orb">
+          {isRecording ? <span className="flow-orb-dot" /> : <Mic size={16} />}
+        </div>
+        <div className="flow-wave" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="flow-copy">
+          <strong>{title}</strong>
+          <span>{subtitle}</span>
+        </div>
+        <span className={stateClass} />
       </div>
     </main>
   );

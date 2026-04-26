@@ -1,6 +1,6 @@
 use futures_util::StreamExt;
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, State};
 use tauri_plugin_autostart::ManagerExt;
 
 use crate::audio;
@@ -120,6 +120,16 @@ async fn stop_recording_inner(
 
 fn show_status(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("status") {
+        if let Ok(Some(monitor)) = window.current_monitor().or_else(|_| window.primary_monitor()) {
+            if let Ok(size) = window.outer_size() {
+                let work_area = monitor.work_area();
+                let x = work_area.position.x
+                    + ((work_area.size.width.saturating_sub(size.width)) / 2) as i32;
+                let y = work_area.position.y
+                    + work_area.size.height.saturating_sub(size.height + 26) as i32;
+                let _ = window.set_position(PhysicalPosition::new(x, y));
+            }
+        }
         let _ = window.show();
     }
 }
