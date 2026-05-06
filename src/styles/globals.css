@@ -368,7 +368,7 @@ select {
   }
 
   .flow-bar {
-    @apply relative flex h-full w-full items-center justify-center overflow-hidden px-3;
+    @apply relative flex h-full w-full items-center justify-center overflow-hidden px-2.5;
     border-radius: inherit;
     border: 2px solid rgba(248, 242, 216, 0.68);
     background: rgba(10, 11, 10, 0.94);
@@ -386,7 +386,7 @@ select {
   }
 
   .flow-wave {
-    @apply relative z-10 flex h-7 min-w-[104px] items-center justify-center gap-0.5;
+    @apply relative z-10 flex h-5 w-[90px] items-center justify-center gap-0.5;
   }
 
   .flow-wave span {

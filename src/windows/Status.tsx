@@ -3,7 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getAudioMeter } from '../lib/tauri';
 import { useAppStore } from '../store/useAppStore';
 
-const BAR_COUNT = 28;
+const BAR_COUNT = 23;
 const EMPTY_WAVE = Array.from({ length: BAR_COUNT }, () => 0);
 
 export function Status() {
@@ -69,7 +69,7 @@ export function Status() {
         const liquidVariation = 0.84 + Math.sin(index * 1.73) * 0.12;
         const displayLevel = Math.min(0.98, Math.pow(level, 0.55));
         const height =
-          1 + Math.min(0.98, displayLevel * liquidVariation + centerBias * displayLevel * 0.1) * 24;
+          1 + Math.min(0.9, displayLevel * liquidVariation + centerBias * displayLevel * 0.08) * 14;
         return Math.round(height);
       }),
     [wave],
