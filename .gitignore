@@ -1,5 +1,6 @@
 node_modules/
 dist/
+svara-demo-video/
 .env
 .env.*
 !.env.example
