@@ -43,8 +43,8 @@
       {
         "label": "status",
         "title": "",
-        "width": 136,
-        "height": 32,
+        "width": 140,
+        "height": 36,
         "decorations": false,
         "transparent": true,
         "backgroundColor": [0, 0, 0, 0],
