@@ -15,6 +15,7 @@ use history::HistoryDb;
 use serde::Serialize;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::window::Color;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
@@ -96,6 +97,13 @@ fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+fn setup_status_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("status") {
+        let _ = window.set_background_color(Some(Color(0, 0, 0, 0)));
+        let _ = window.set_shadow(false);
+    }
+}
+
 fn register_hotkey(app: &AppHandle, hotkey: &str) -> anyhow::Result<()> {
     let shortcut =
         Shortcut::from_str(hotkey).with_context(|| format!("could not parse hotkey: {hotkey}"))?;
@@ -133,6 +141,7 @@ pub fn run() {
         )
         .setup(|app| {
             setup_tray(app.handle())?;
+            setup_status_window(app.handle());
 
             let state = app.state::<AppState>();
             let hotkey = state.config.lock().unwrap().hotkey.clone();
@@ -148,6 +157,7 @@ pub fn run() {
             commands::start_recording,
             commands::stop_recording,
             commands::toggle_recording_command,
+            commands::get_audio_meter,
             commands::get_history,
             commands::delete_history_entry,
             commands::clear_history,

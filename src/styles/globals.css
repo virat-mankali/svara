@@ -29,9 +29,13 @@ html[data-window="status"] body,
 html[data-window="status"] #root,
 body[data-window="status"],
 body[data-window="status"] #root {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
-  border-radius: 9999px;
+  border-radius: 999px;
   background: transparent !important;
+  clip-path: inset(0 round 999px);
 }
 
 button,
@@ -358,47 +362,50 @@ select {
   }
 
   .status-shell {
-    @apply flex h-screen w-screen items-center justify-center overflow-hidden rounded-full bg-transparent p-0.5;
+    @apply flex h-screen w-screen items-center justify-center overflow-hidden bg-transparent p-px;
+    border-radius: 999px;
+    clip-path: inset(0 round 999px);
   }
 
   .flow-bar {
-    @apply flex h-full w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-white/55 px-2 backdrop-blur-sm;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+    @apply relative flex h-full w-full items-center justify-center overflow-hidden px-2.5;
+    border-radius: inherit;
+    border: 2px solid rgba(248, 242, 216, 0.68);
+    background: rgba(10, 11, 10, 0.94);
+    background-clip: padding-box;
+    box-shadow:
+      inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+      inset 0 7px 14px rgba(255, 255, 255, 0.035),
+      inset 0 -10px 20px rgba(0, 0, 0, 0.58);
+    backdrop-filter: blur(18px) saturate(1.35);
+    -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  }
+
+  .flow-bar::before {
+    content: none;
   }
 
   .flow-wave {
-    @apply flex h-5 items-center gap-0.5;
+    @apply relative z-10 flex h-5 w-[90px] items-center justify-center gap-0.5;
   }
 
   .flow-wave span {
-    @apply block w-1 rounded-full bg-[#151515];
-    height: 5px;
-    animation: flow-wave 780ms ease-in-out infinite;
-    filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.72));
-  }
-
-  .flow-wave span:nth-child(2) {
-    animation-delay: 70ms;
-  }
-
-  .flow-wave span:nth-child(3) {
-    animation-delay: 140ms;
-  }
-
-  .flow-wave span:nth-child(4) {
-    animation-delay: 210ms;
-  }
-
-  .flow-wave span:nth-child(5) {
-    animation-delay: 280ms;
-  }
-
-  .flow-wave span:nth-child(6) {
-    animation-delay: 350ms;
+    @apply block w-0.5 rounded-full bg-[#f8f2d8];
+    height: var(--bar-height, 5px);
+    min-height: 1px;
+    transition:
+      height 58ms ease-out,
+      opacity 90ms ease-out;
+    opacity: 0.9;
+    box-shadow: 0 0 3px rgba(255, 246, 211, 0.16);
   }
 
   .flow-state {
-    @apply ml-0.5 h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.86)];
+    @apply relative z-10 h-2.5 w-2.5 shrink-0 rounded-full bg-red-400 shadow-[0_0_13px_rgba(248,113,113,0.96)];
+  }
+
+  .flow-bar[data-state="recording"] .flow-state {
+    @apply hidden;
   }
 
   .flow-bar[data-state="transcribing"] .flow-state {
@@ -410,19 +417,7 @@ select {
   }
 
   .flow-label {
-    @apply min-w-[78px] text-center text-[11px] font-semibold leading-none text-[#151515];
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.78);
-  }
-}
-
-@keyframes flow-wave {
-  0%,
-  100% {
-    height: 4px;
-    opacity: 0.5;
-  }
-  50% {
-    height: 16px;
-    opacity: 1;
+    @apply relative z-10 min-w-[78px] text-center text-[11px] font-semibold leading-none text-white;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.62);
   }
 }

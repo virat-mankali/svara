@@ -6,15 +6,28 @@ use std::thread;
 use anyhow::Context;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, Stream, StreamConfig};
+use serde::Serialize;
 
 const TARGET_SAMPLE_RATE: u32 = 16_000;
 const MIN_AUDIO_RMS: f32 = 0.00005;
 const MIN_AUDIO_PEAK: f32 = 0.001;
 const TARGET_PEAK: f32 = 0.85;
 const MAX_NORMALIZE_GAIN: f32 = 30.0;
+const LIVE_METER_INITIAL_FLOOR: f32 = 0.00025;
+const LIVE_METER_MAX_FLOOR: f32 = 0.003;
+const LIVE_METER_COMPRESSION_RANGE: f32 = 22.0;
+
+#[derive(Clone, Copy, Debug, Default, Serialize)]
+pub struct AudioMeter {
+    pub rms: f32,
+    pub peak: f32,
+    pub level: f32,
+    pub noise_floor: f32,
+}
 
 pub struct AudioController {
     tx: mpsc::Sender<AudioRequest>,
+    meter: Arc<Mutex<AudioMeter>>,
 }
 
 enum AudioRequest {
@@ -33,6 +46,7 @@ enum AudioRequest {
 struct RecorderInner {
     stream: Option<Stream>,
     samples: Arc<Mutex<Vec<f32>>>,
+    meter: Arc<Mutex<AudioMeter>>,
     sample_rate: u32,
     channels: u16,
     is_recording: bool,
@@ -41,8 +55,11 @@ struct RecorderInner {
 impl AudioController {
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel();
+        let meter = Arc::new(Mutex::new(AudioMeter::default()));
+        let recorder_meter = Arc::clone(&meter);
+
         thread::spawn(move || {
-            let mut recorder = RecorderInner::new();
+            let mut recorder = RecorderInner::new(recorder_meter);
             while let Ok(request) = rx.recv() {
                 match request {
                     AudioRequest::Start { device, reply } => {
@@ -60,7 +77,7 @@ impl AudioController {
             }
         });
 
-        Self { tx }
+        Self { tx, meter }
     }
 
     pub fn is_recording(&self) -> bool {
@@ -93,13 +110,18 @@ impl AudioController {
             .context("audio thread did not return a stop result")?
             .map_err(|error| anyhow::anyhow!(error))
     }
+
+    pub fn meter(&self) -> AudioMeter {
+        *self.meter.lock().unwrap()
+    }
 }
 
 impl RecorderInner {
-    fn new() -> Self {
+    fn new(meter: Arc<Mutex<AudioMeter>>) -> Self {
         Self {
             stream: None,
             samples: Arc::new(Mutex::new(Vec::new())),
+            meter,
             sample_rate: TARGET_SAMPLE_RATE,
             channels: 1,
             is_recording: false,
@@ -112,6 +134,7 @@ impl RecorderInner {
         }
 
         self.samples.lock().unwrap().clear();
+        *self.meter.lock().unwrap() = AudioMeter::default();
         let host = cpal::default_host();
         let device = select_input_device(&host, requested_device)?
             .context("no input audio device available")?;
@@ -121,13 +144,16 @@ impl RecorderInner {
         self.channels = config.channels;
 
         let samples = Arc::clone(&self.samples);
+        let meter = Arc::clone(&self.meter);
         let channels = self.channels as usize;
         let err_fn = |err| eprintln!("audio input stream error: {err}");
 
         let stream = match supported.sample_format() {
             SampleFormat::F32 => device.build_input_stream(
                 &config,
-                move |data: &[f32], _| push_mono_samples(data.iter().copied(), channels, &samples),
+                move |data: &[f32], _| {
+                    push_mono_samples(data.iter().copied(), channels, &samples, &meter)
+                },
                 err_fn,
                 None,
             )?,
@@ -138,6 +164,7 @@ impl RecorderInner {
                         data.iter().map(|value| *value as f32 / i16::MAX as f32),
                         channels,
                         &samples,
+                        &meter,
                     )
                 },
                 err_fn,
@@ -151,6 +178,7 @@ impl RecorderInner {
                             .map(|value| (*value as f32 / u16::MAX as f32) * 2.0 - 1.0),
                         channels,
                         &samples,
+                        &meter,
                     )
                 },
                 err_fn,
@@ -172,6 +200,7 @@ impl RecorderInner {
 
         self.stream.take();
         self.is_recording = false;
+        *self.meter.lock().unwrap() = AudioMeter::default();
 
         let raw = self.samples.lock().unwrap().clone();
         if raw.len() < (self.sample_rate / 4) as usize {
@@ -223,22 +252,73 @@ fn select_input_device(
     Ok(host.default_input_device())
 }
 
-fn push_mono_samples<I>(data: I, channels: usize, samples: &Arc<Mutex<Vec<f32>>>)
-where
+fn push_mono_samples<I>(
+    data: I,
+    channels: usize,
+    samples: &Arc<Mutex<Vec<f32>>>,
+    meter: &Arc<Mutex<AudioMeter>>,
+) where
     I: Iterator<Item = f32>,
 {
     let mut output = samples.lock().unwrap();
     let frame_channels = channels.max(1);
-    let mut frame = Vec::with_capacity(frame_channels);
+    let mut frame_sum = 0.0f32;
+    let mut frame_len = 0usize;
+    let mut sum_squares = 0.0f32;
+    let mut peak = 0.0f32;
+    let mut frames = 0usize;
 
     for sample in data {
-        frame.push(sample);
-        if frame.len() == frame_channels {
-            let mono = frame.iter().sum::<f32>() / frame_channels as f32;
+        frame_sum += sample;
+        frame_len += 1;
+        if frame_len == frame_channels {
+            let mono = (frame_sum / frame_channels as f32).clamp(-1.0, 1.0);
             output.push(mono.clamp(-1.0, 1.0));
-            frame.clear();
+            sum_squares += mono * mono;
+            peak = peak.max(mono.abs());
+            frames += 1;
+            frame_sum = 0.0;
+            frame_len = 0;
         }
     }
+
+    drop(output);
+
+    if frames > 0 {
+        update_live_meter(meter, (sum_squares / frames as f32).sqrt(), peak);
+    }
+}
+
+fn update_live_meter(meter: &Arc<Mutex<AudioMeter>>, rms: f32, peak: f32) {
+    let mut current = meter.lock().unwrap();
+    let weighted_signal = (rms * 0.82 + peak * 0.18).max(0.000001);
+
+    if current.noise_floor <= 0.0 {
+        current.noise_floor = weighted_signal.clamp(LIVE_METER_INITIAL_FLOOR, LIVE_METER_MAX_FLOOR);
+    } else if weighted_signal < current.noise_floor || current.level < 0.08 {
+        let floor_target = weighted_signal.clamp(LIVE_METER_INITIAL_FLOOR, LIVE_METER_MAX_FLOOR);
+        let floor_smoothing = if weighted_signal < current.noise_floor {
+            0.08
+        } else {
+            0.012
+        };
+        current.noise_floor += (floor_target - current.noise_floor) * floor_smoothing;
+    }
+
+    let floor = current.noise_floor.max(LIVE_METER_INITIAL_FLOOR);
+    let voice_signal = (weighted_signal - floor * 1.55).max(0.0);
+    let normalized =
+        ((voice_signal / floor).ln_1p() / LIVE_METER_COMPRESSION_RANGE.ln_1p()).clamp(0.0, 1.0);
+    let normalized = normalized.powf(0.62);
+
+    let smoothing = if normalized > current.level {
+        0.7
+    } else {
+        0.26
+    };
+    current.level += (normalized - current.level) * smoothing;
+    current.rms = rms;
+    current.peak = peak.max(current.peak * 0.82);
 }
 
 fn linear_resample(samples: &[f32], from_rate: u32, to_rate: u32) -> Vec<f32> {

@@ -24,9 +24,17 @@ export interface ModelDownloadStatus {
   message: string;
 }
 
+export interface AudioMeter {
+  rms: number;
+  peak: number;
+  level: number;
+  noise_floor: number;
+}
+
 export const startRecording = () => invoke<void>('start_recording');
 export const stopRecording = () => invoke<string>('stop_recording');
 export const toggleRecording = () => invoke<void>('toggle_recording_command');
+export const getAudioMeter = () => invoke<AudioMeter>('get_audio_meter');
 export const getHistory = () => invoke<TranscriptionEntry[]>('get_history');
 export const deleteHistoryEntry = (id: string) => invoke<void>('delete_history_entry', { id });
 export const clearHistory = () => invoke<void>('clear_history');
