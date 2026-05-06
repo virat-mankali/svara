@@ -45,6 +45,11 @@ pub async fn toggle_recording_command(
     }
 }
 
+#[tauri::command]
+pub fn get_audio_meter(state: State<'_, AppState>) -> audio::AudioMeter {
+    state.recorder.meter()
+}
+
 pub async fn toggle_recording(app: AppHandle) -> Result<(), String> {
     let state = app.state::<AppState>();
     if state.recorder.is_recording() {
