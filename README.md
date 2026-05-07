@@ -33,6 +33,33 @@ Svara is a tiny dictation layer for your Mac. It sits in the menu bar, listens w
 
 Use Groq when you want speed. Use Local Whisper when you want everything on-device. Either way, Svara keeps the workflow simple: talk once, get text instantly.
 
+## Install Svara
+
+**Current version:** `v1.1.0`
+
+The easiest way to use Svara is the macOS DMG. No cloning, no developer setup.
+
+1. Download the latest `.dmg` from [Svara DMG](https://github.com/virat-mankali/svara/releases).
+2. Open the DMG.
+3. Drag **Svara** into your Applications folder.
+4. Launch Svara and grant the macOS permissions it asks for.
+
+Svara is not signed or notarized by Apple yet, so macOS may show a warning that it cannot verify the app is free of malware. If that happens after dragging Svara into Applications, open Terminal and run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Svara.app
+open /Applications/Svara.app
+```
+
+## How To Use
+
+1. Open Svara.
+2. Choose **Groq Cloud** or **Local Whisper** in Settings.
+3. Press `CmdOrCtrl+Shift+Space`.
+4. Speak, press the shortcut again, and watch the text appear.
+
+Use **Groq Cloud** for quick setup and fast transcription. Use **Local Whisper** for the most private workflow, with the model downloaded from inside Svara.
+
 ## At a Glance
 
 | Svara gives you | Why it matters |
@@ -55,28 +82,6 @@ Press shortcut -> speak naturally -> Svara transcribes -> text appears where you
 - Stores the latest 100 transcripts locally.
 - Lets you pick a microphone, custom hotkey, and launch-at-login behavior.
 - Helps you open the right macOS permission screens when setup needs attention.
-
-## Install Svara
-
-**Current version:** `v1.1.0`
-
-The easiest way to use Svara is the macOS DMG. No cloning, no terminal setup, no developer tooling.
-
-1. Download the latest `.dmg` from [Svara DMG](https://github.com/virat-mankali/svara/releases).
-2. Open the DMG.
-3. Drag **Svara** into your Applications folder.
-4. Launch Svara and grant the macOS permissions it asks for.
-
-That is it. You now have a menu-bar voice assistant for your Mac.
-
-## How To Use
-
-1. Open Svara.
-2. Choose **Groq Cloud** or **Local Whisper** in Settings.
-3. Press `CmdOrCtrl+Shift+Space`.
-4. Speak, press the shortcut again, and watch the text appear.
-
-Use **Groq Cloud** for quick setup and fast transcription. Use **Local Whisper** for the most private workflow, with the model downloaded from inside Svara.
 
 ## Privacy
 
